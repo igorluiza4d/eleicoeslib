@@ -1,5 +1,6 @@
 // /app/candidatos/[uf]/[municipio]/[cargo]/[slug-nome-candidato]/page.tsx
 import Image from 'next/image';
+import Link from 'next/link';
 import fs from 'fs';
 import path from 'path';
 
@@ -75,7 +76,6 @@ async function getCandidateData(params: Props['params']): Promise<{ candidate: C
 
   // Verifica se a imagem existe
   const imagePath = path.join(process.cwd(), 'public', candidate.fotocandidato);
-  console.log('IGOR DANIEL:'+imagePath)
   const imageExists = fs.existsSync(imagePath);
 
   // Se a imagem não existir, usa uma imagem padrão
@@ -86,15 +86,12 @@ async function getCandidateData(params: Props['params']): Promise<{ candidate: C
 
 // Função para gerar o texto descritivo genérico do candidato
 function gerarTextoDescritivo(candidate: Candidate, uf: string, municipio: string): string {
-  // Nome e partido do candidato
   let descricao = `${candidate.nomeUrna} é candidato(a) a ${candidate.cargo} de ${municipio}, ${uf.toUpperCase()}, nas eleições de 2024 pelo partido ${candidate.nomePartido} (${candidate.siglaPartido}).`;
 
-  // Ocupação do candidato (genérico)
   if (candidate.ocupacao) {
     descricao += ` ${candidate.nomeUrna} atua como ${candidate.ocupacao} e é reconhecido(a) por seu comprometimento na área.`;
   }
 
-  // Coligação ou candidatura isolada
   if (candidate.colicacao && candidate.descColicacao) {
     descricao += ` Sua candidatura conta com o apoio da coligação ${candidate.colicacao}, formada pelo partido ${candidate.descColicacao}.`;
   } else {
@@ -102,6 +99,39 @@ function gerarTextoDescritivo(candidate: Candidate, uf: string, municipio: strin
   }
 
   return descricao;
+}
+
+// Função para renderizar o breadcrumb
+function Breadcrumb({ params }: Props) {
+  return (
+    <nav aria-label="breadcrumb">
+      <ol className="breadcrumb flex space-x-2">
+        <li>
+          <Link href="/candidatos" legacyBehavior>
+            <a className="text-blue-600 hover:underline">Candidatos</a>
+          </Link>
+          <span> / </span>
+        </li>
+        <li>
+          <Link href={`/candidatos/${params.uf}`} legacyBehavior>
+            <a className="text-blue-600 hover:underline">{params.uf.toUpperCase()}</a>
+          </Link>
+          <span> / </span>
+        </li>
+        <li>
+          <Link href={`/candidatos/${params.uf}/${params.municipio}`} legacyBehavior>
+            <a className="text-blue-600 hover:underline">{params.municipio}</a>
+          </Link>
+          <span> / </span>
+        </li>
+        <li>
+          <Link href={`/candidatos/${params.uf}/${params.municipio}/${params.cargo}`} legacyBehavior>
+            <a className="text-blue-600 hover:underline">{params.cargo}</a>
+          </Link>
+        </li>
+      </ol>
+    </nav>
+  );
 }
 
 export default async function CandidatePage({ params }: Props) {
@@ -119,6 +149,11 @@ export default async function CandidatePage({ params }: Props) {
 
   return (
     <>
+      <div className='bg-gray-100 py-3'>
+      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-3 mx-auto border-b border-gray-100">
+        <Breadcrumb params={params} />
+      </div>
+      </div>
       <div className='flex bg-gray-100'>
         <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto border-b border-gray-100">
           <div className="md:flex md:items-center md:gap-12 xl:gap-32">
