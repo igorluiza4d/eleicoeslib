@@ -75,6 +75,7 @@ async function getCandidateData(params: Props['params']): Promise<{ candidate: C
 
   // Verifica se a imagem existe
   const imagePath = path.join(process.cwd(), 'public', candidate.fotocandidato);
+  console.log('IGOR DANIEL:'+imagePath)
   const imageExists = fs.existsSync(imagePath);
 
   // Se a imagem não existir, usa uma imagem padrão
@@ -222,7 +223,7 @@ export default async function CandidatePage({ params }: Props) {
                     <dd>
                       <ul>
                         <li className="me-1 after:content-[','] inline-flex items-center text-sm text-gray-800">
-                          DEFERIDA
+                          {candidate.idcandidato} - {candidate.fotocandidato}
                         </li>
                       </ul>
                     </dd>
