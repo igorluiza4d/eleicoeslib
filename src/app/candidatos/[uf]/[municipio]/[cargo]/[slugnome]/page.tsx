@@ -134,6 +134,47 @@ function Breadcrumb({ params }: Props) {
   );
 }
 
+// Função para gerar os metadados dinâmicos (SEO e OpenGraph)
+export async function generateMetadata({ params }: Props) {
+  const data = await getCandidateData(params);
+
+  if (!data) {
+    return {
+      title: 'Candidato não encontrado',
+      description: 'Candidato não encontrado para esta eleição.',
+    };
+  }
+
+  const { candidate, imageSrc } = data;
+  const descricao = gerarTextoDescritivo(candidate, params.uf, params.municipio);
+
+  return {
+    title: `Candidato ${candidate.nomeUrna} - Eleições ${params.uf.toUpperCase()}`,
+    description: descricao,
+    openGraph: {
+      title: `Candidato ${candidate.nomeUrna}`,
+      description: descricao,
+      url: `https://seuportal.com/candidatos/${params.uf}/${params.municipio}/${params.cargo}/${params.slugnome}`,
+      images: [
+        {
+          url: imageSrc,
+          width: 800,
+          height: 600,
+          alt: `Foto do candidato ${candidate.nomeUrna}`,
+        },
+      ],
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      site: '@seuportal',
+      title: `Candidato ${candidate.nomeUrna}`,
+      description: descricao,
+      image: imageSrc,
+    },
+  };
+}
+
 export default async function CandidatePage({ params }: Props) {
   const data = await getCandidateData(params);
 
@@ -150,9 +191,9 @@ export default async function CandidatePage({ params }: Props) {
   return (
     <>
       <div className='bg-gray-100 py-3'>
-      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-3 mx-auto border-b border-gray-100">
-        <Breadcrumb params={params} />
-      </div>
+        <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-3 mx-auto border-b border-gray-100">
+          <Breadcrumb params={params} />
+        </div>
       </div>
       <div className='flex bg-gray-100'>
         <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto border-b border-gray-100">
@@ -170,11 +211,6 @@ export default async function CandidatePage({ params }: Props) {
                   priority={true}
                 />
               </div>
-              <div className='grid grid-cols-1 w-full'>
-                <div className="flex w-full items-center justify-center my-2">
-                  Redes sociais do candidato
-                </div>
-              </div> 
             </div>        
             <div className="md:flex-auto md:w-3/4 mt-5 sm:mt-10 lg:mt-0">
               <div className="space-y-6 sm:space-y-8">
@@ -199,90 +235,8 @@ export default async function CandidatePage({ params }: Props) {
                 </div>
 
                 <div className="space-y-3">
-                  <dl className="flex flex-col sm:flex-row gap-1">
-                    <dt className="min-w-40">
-                      <span className="block text-xl text-gray-900">Cargo disputado:</span>
-                    </dt>
-                    <dd>
-                      <ul>
-                        <li className="me-1 inline-flex items-center text-xl text-gray-900">
-                          {candidate.cargo}
-                        </li>
-                      </ul>
-                    </dd>
-                  </dl>
-
-                  <dl className="flex flex-col sm:flex-row gap-1">
-                    <dt className="min-w-40">
-                      <span className="block text-xl text-gray-900">Nascimento:</span>
-                    </dt>
-                    <dd>
-                      <ul>
-                        <li className="me-1 inline-flex items-center text-xl text-gray-900">
-                          {candidate.dtNascimento}
-                        </li>
-                      </ul>
-                    </dd>
-                  </dl>
-
-                  <dl className="flex flex-col sm:flex-row gap-1">
-                    <dt className="min-w-40">
-                      <span className="block text-xl text-gray-900">Partido:</span>
-                    </dt>
-                    <dd>
-                      <ul>
-                        <li className="me-1 inline-flex items-center text-xl text-gray-900">
-                          {candidate.siglaPartido}
-                        </li>
-                      </ul>
-                    </dd>
-                  </dl>
-
-                  <dl className="flex flex-col sm:flex-row gap-1">
-                    <dt className="min-w-40">
-                      <span className="block text-xl text-gray-900">CNPJ da Campanha:</span>
-                    </dt>
-                    <dd>
-                      <ul>
-                        <li className="me-1 inline-flex items-center text-xl text-gray-900">
-                          55.678.880/0001-44
-                        </li>
-                      </ul>
-                    </dd>
-                  </dl>
-
-                  <dl className="flex flex-col sm:flex-row gap-1">
-                    <dt className="min-w-40">
-                      <span className="block text-sm text-gray-500">Candidatura:</span>
-                    </dt>
-                    <dd>
-                      <ul>
-                        <li className="me-1 after:content-[','] inline-flex items-center text-sm text-gray-800">
-                          {candidate.idcandidato} - {candidate.fotocandidato}
-                        </li>
-                      </ul>
-                    </dd>
-                  </dl>
-
-                  <dl className="flex flex-col sm:flex-row gap-1">
-                    <dt className="min-w-40">
-                      <span className="block text-sm text-gray-500">Vice:</span>
-                    </dt>
-                    <dd>
-                      <ul>
-                        <li className="me-1 after:content-[','] inline-flex items-center text-sm text-gray-800">
-                          Daniel Rodrigues
-                        </li>
-                      </ul>
-                    </dd>
-                  </dl>
+                  {/* Outros detalhes do candidato */}
                 </div>
-              </div>
-              <div className="mt-7 grid gap-3 w-full sm:inline-flex">
-                <a className="py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none" href={candidate.proposta}>
-                  Plano de Governo
-                  <svg className="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                </a>
               </div>
             </div>
           </div>
