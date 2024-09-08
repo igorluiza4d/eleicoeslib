@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import fs from 'fs';
 import path from 'path';
+import { Metadata } from 'next';
 
 interface Candidate {
   agremiacao: string;
@@ -47,14 +48,13 @@ async function getCandidateBens(idcandidato: string, params: Props['params']): P
   const filePath = path.join(process.cwd(), 'public', 'data', params.uf, params.municipio, `arquivo-bens-${params.uf}-${params.municipio}.json`);
 
   if (!fs.existsSync(filePath)) {
-    return null; // Caso o arquivo não exista, retorne null
+    return null;
   }
 
   const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-  // Verifica se há bens para o id do candidato
   if (!jsonData[idcandidato]) {
-    return null; // Se não houver bens para o candidato, retorne null
+    return null;
   }
 
   const bens = Object.keys(jsonData[idcandidato]).map((key) => jsonData[idcandidato][key]);
@@ -74,11 +74,9 @@ async function getCandidateData(params: Props['params']): Promise<{ candidate: C
 
   const candidate = cargoData[params.slugnome];
 
-  // Verifica se a imagem existe
   const imagePath = path.join(process.cwd(), 'public', candidate.fotocandidato);
   const imageExists = fs.existsSync(imagePath);
 
-  // Se a imagem não existir, usa uma imagem padrão
   const imageSrc = imageExists ? candidate.fotocandidato : '/perfil-padrao.jpg';
 
   return { candidate, imageSrc };
@@ -134,8 +132,8 @@ function Breadcrumb({ params }: Props) {
   );
 }
 
-// Função para gerar os metadados dinâmicos (SEO e OpenGraph)
-export async function generateMetadata({ params }: Props) {
+// Função para gerar os metadados dinâmicos (SEO, OpenGraph e Twitter)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getCandidateData(params);
 
   if (!data) {
@@ -175,6 +173,62 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
+// Função para incluir dados estruturados para o candidato e o portal
+function StructuredData({ params, candidate, imageSrc }: { params: Props['params'], candidate: Candidate, imageSrc: string }) {
+  const breadcrumbList = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Candidatos",
+        "item": `https://seuportal.com/candidatos`
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": params.uf.toUpperCase(),
+        "item": `https://seuportal.com/candidatos/${params.uf}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": params.municipio,
+        "item": `https://seuportal.com/candidatos/${params.uf}/${params.municipio}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": params.cargo,
+        "item": `https://seuportal.com/candidatos/${params.uf}/${params.municipio}/${params.cargo}`
+      }
+    ]
+  };
+
+  const candidateData = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": candidate.nomeUrna,
+    "jobTitle": candidate.cargo,
+    "image": imageSrc,
+    "url": `https://seuportal.com/candidatos/${params.uf}/${params.municipio}/${params.cargo}/${params.slugnome}`,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": params.municipio,
+      "addressRegion": params.uf.toUpperCase()
+    },
+    "affiliation": {
+      "@type": "Organization",
+      "name": candidate.siglaPartido
+    }
+  };
+
+  return (
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([breadcrumbList, candidateData]) }} />
+  );
+}
+
 export default async function CandidatePage({ params }: Props) {
   const data = await getCandidateData(params);
 
@@ -185,34 +239,40 @@ export default async function CandidatePage({ params }: Props) {
   const { candidate, imageSrc } = data;
   const textoDescritivo = gerarTextoDescritivo(candidate, params.uf, params.municipio);
 
-  // Carregar os bens do candidato com base no id
   const bens = await getCandidateBens(candidate.idcandidato, params);
 
   return (
     <>
-      <div className='bg-gray-100 py-3'>
-        <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-3 mx-auto border-b border-gray-100">
-          <Breadcrumb params={params} />
-        </div>
-      </div>
+      <StructuredData params={params} candidate={candidate} imageSrc={imageSrc} />
+
       <div className='flex bg-gray-100'>
         <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto border-b border-gray-100">
           <div className="md:flex md:items-center md:gap-12 xl:gap-32">
-            <div className=' grid grid-cols-1 items-center justify-center md:w-1/4'>
+            <div className='grid grid-cols-1 items-center justify-center md:w-1/4'>
               <div className='flex w-full items-center justify-center'>
                 <Image
                   src={imageSrc}
                   alt={`Foto do candidato ${candidate.nomeUrna}`}
-                  width={322}
-                  height={450}
-                  quality={90}
-                  layout="responsive"
-                  className="rounded-xl" 
+                  width={191}
+                  height={225}
+                  quality={100}
+                  // layout="responsive"
+                  className="rounded-xl"
                   priority={true}
                 />
               </div>
-            </div>        
+              <div className='flex flex-row w-full justify-center mt-5'>
+                <a className='flex px-8 py-4 flex-row text-base font-semibold rounded-lg border uppercase items-center border-transparent gap-x-2 justify-items-center  bg-blue-600 text-white  bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none' href={candidate.proposta}>
+                  Plano de Governo
+                  <svg className="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                  </a>
+              </div>
+
+            </div>
             <div className="md:flex-auto md:w-3/4 mt-5 sm:mt-10 lg:mt-0">
+              <div className='pb-4'>
+                <Breadcrumb params={params} />
+              </div>
               <div className="space-y-6 sm:space-y-8">
                 <div className="space-y-2 md:space-y-4">
                   <h2 className="font-bold text-3xl lg:text-4xl text-gray-800">
@@ -222,20 +282,33 @@ export default async function CandidatePage({ params }: Props) {
                         <p>{candidate.nomeUrna}</p>
                       </div>
                       <div className='py-2'>
-                        <p className='text-xl'>NÚM:</p>
-                        <p>{candidate.numPartido}</p>
+                        <p className='text-xl'>NÚMERO DO CANDIDATO:</p>
+                        <p>{candidate.numCand}</p>
                       </div>
                     </div>
                   </h2>
+                  <div className="md:grid md:grid-cols-2 gap-4">
+                    <div className='py-2'>
+                      <p className='text-lg'>Data de Nascimento:</p>
+                      <p>{candidate.dtNascimento}</p>
+                    </div>
+                    <div className='py-2'>
+                      <p className='text-lg'>Estado Civil:</p>
+                      <p>{candidate.estadoCivil}</p>
+                    </div>
+                    <div className='py-2'>
+                      <p className='text-lg'>Escolaridade:</p>
+                      <p>{candidate.escolaridade}</p>
+                    </div>
+                    <div className='py-2'>
+                      <p className='text-lg'>Partido:</p>
+                      <p>{candidate.siglaPartido}</p>
+                    </div>
+                  </div>
 
-                  {/* Adicionando a descrição dinâmica */}
                   <p className="text-gray-700 text-base">
                     {textoDescritivo}
                   </p>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Outros detalhes do candidato */}
                 </div>
               </div>
             </div>
@@ -243,7 +316,6 @@ export default async function CandidatePage({ params }: Props) {
         </div>
       </div>
 
-      {/* Seção de bens do candidato */}
       <div id="bens" className="mt-10 max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto border-b border-gray-100">
         <h3 className="text-2xl font-bold text-gray-800">Bens do Candidato</h3>
         {bens && bens.length > 0 ? (
@@ -263,5 +335,4 @@ export default async function CandidatePage({ params }: Props) {
   );
 }
 
-// Função para revalidação ISR (Incremental Static Regeneration)
-export const revalidate = 60; // ISR: revalida a cada 60 segundos
+export const revalidate = 60;
