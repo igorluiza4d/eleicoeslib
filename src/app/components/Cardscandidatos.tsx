@@ -96,9 +96,6 @@ const Cardscandidatos: React.FC<CandidatosProps> = ({ uf, municipio, slugMunicip
                     height={150} 
                     layout="intrinsic" 
                     className="w-28 h-auto rounded-md" 
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/imgscandidatos/perfil-padrao.jpg'; // Substitui por uma imagem padrão
-                }}
             />
             </div>
             <div className="p-4 md:p-6">
@@ -128,5 +125,4 @@ const Cardscandidatos: React.FC<CandidatosProps> = ({ uf, municipio, slugMunicip
     </div>
   );
 };
-
 export default Cardscandidatos;
