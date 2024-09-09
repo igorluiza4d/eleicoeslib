@@ -1,7 +1,5 @@
 import dynamic from 'next/dynamic';
 import HeroCapaBox from '@/app/components/HeroCapaBox'; // Certifique-se de que o caminho está correto
-import fs from 'fs';
-import path from 'path';
 
 interface Props {
   params: {
