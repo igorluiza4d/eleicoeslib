@@ -12,6 +12,19 @@ interface UfMunicipiosPageProps {
   municipios: Municipio[];
 }
 
+// Função para transformar o nome do município em um slug amigável para URL
+const slugify = (text: string) => {
+  return text
+    .toString()
+    .normalize('NFD') // Remove acentos
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacríticos
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-') // Substitui espaços por hífens
+    .replace(/[^\w\-]+/g, '') // Remove caracteres especiais
+    .replace(/\-\-+/g, '-'); // Substitui múltiplos hífens por um único
+};
+
 const UfMunicipiosPage = ({ uf, municipios }: UfMunicipiosPageProps) => {
   const [searchTerm, setSearchTerm] = useState(''); // Estado para armazenar o termo de pesquisa
   const [filteredMunicipios, setFilteredMunicipios] = useState<Municipio[]>(municipios); // Estado para armazenar os municípios filtrados
@@ -88,13 +101,13 @@ const UfMunicipiosPage = ({ uf, municipios }: UfMunicipiosPageProps) => {
             </div>
             <div className="mt-auto flex border-t border-gray-200 divide-x divide-gray-200">
               <Link
-                href={`/candidatos/${uf}/${municipio.nome}/prefeito`}
+                href={`/candidatos/${uf}/${slugify(municipio.nome)}/prefeito`}
                 className="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-es-xl bg-white text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
               >
                 Prefeito
               </Link>
               <Link
-                href={`/candidatos/${uf}/${municipio.nome}/vereador`}
+                href={`/candidatos/${uf}/${slugify(municipio.nome)}/vereador`}
                 className="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-ee-xl bg-white text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
               >
                 Vereador
