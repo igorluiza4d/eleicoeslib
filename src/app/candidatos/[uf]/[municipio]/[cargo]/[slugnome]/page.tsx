@@ -168,7 +168,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       site: '@seuportal',
       title: `Candidato ${candidate.nomeUrna}`,
       description: descricao,
-      image: imageSrc,
+      images: [
+        {
+          url: imageSrc,
+        },
+      ],
     },
   };
 }
