@@ -3,9 +3,9 @@ import { config } from "@fortawesome/fontawesome-svg-core";
 config.autoAddCss = false;
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheck,faVideo,faGlobe } from "@fortawesome/free-solid-svg-icons";
-import { faLinkedin, faInstagram,faSquareInstagram ,faXTwitter, faTiktok,faFacebook } from "@fortawesome/free-brands-svg-icons";
-import { library } from '@fortawesome/fontawesome-svg-core';
+import { faVideo,faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faLinkedin, faSquareInstagram ,faXTwitter, faTiktok,faFacebook } from "@fortawesome/free-brands-svg-icons";
+// import { library } from '@fortawesome/fontawesome-svg-core';
 
 
 import Image from 'next/image'  
