@@ -1,4 +1,3 @@
-// /app/candidatos/[uf]/[municipio]/[cargo]/CargoClientComponent.tsx
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,7 +10,7 @@ interface Candidate {
   siglaPartido: string;
   cargo: string;
   fotocandidato: string;
-  slug: string; // Garantimos que o slug está presente
+  slug: string;
 }
 
 interface Props {
@@ -78,7 +77,7 @@ export default function CargoClientComponent({ params, candidatosDoCargo }: Prop
             <div key={index} className="group flex flex-col h-full bg-white border border-gray-200 shadow-sm rounded-xl">
               <div className="h-52 flex flex-col justify-center items-center bg-gray-200 rounded-t-xl">
                 <Image
-                  src={candidate.fotocandidato}
+                  src={candidate.fotocandidato} // A imagem já foi verificada no servidor
                   alt={`Foto de ${candidate.nomeUrna}`}
                   width={120}
                   height={120}
@@ -100,7 +99,7 @@ export default function CargoClientComponent({ params, candidatosDoCargo }: Prop
               <div className="mt-auto flex border-t border-gray-200 divide-x divide-gray-200">
                 <Link
                   href={`/candidatos/${params.uf}/${params.municipio}/${params.cargo}/${candidate.slug}`}
-                  className="w-full py-3 px-4 inline-flex justify-center items-center capi gap-x-2 text-sm font-medium rounded-es-xl bg-white text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                  className="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-es-xl bg-white text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
                 >
                   Ver Detalhes
                 </Link>

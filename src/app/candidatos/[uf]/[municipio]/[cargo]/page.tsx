@@ -32,6 +32,17 @@ interface Props {
   };
 }
 
+// Função para verificar se a imagem existe no servidor
+function verificarImagemExistente(uf: string, caminhoImagem: string): string {
+  const caminhoCompleto = path.join(process.cwd(), 'public', caminhoImagem);
+
+  if (fs.existsSync(caminhoCompleto)) {
+    return caminhoImagem;
+  } else {
+    return '/perfil-padrao.jpg'; // Caminho da imagem padrão
+  }
+}
+
 // Função para carregar candidatos
 async function loadCandidates(uf: string, municipio: string): Promise<Candidate[]> {
   const filePath = path.join(process.cwd(), 'public', 'data', uf, municipio, `arquivo-candidato-${uf}-${municipio}.json`);
@@ -48,6 +59,8 @@ async function loadCandidates(uf: string, municipio: string): Promise<Candidate[
         ...candidato,
         slug,
         cargo,
+        // Verifica se a imagem existe e substitui pela imagem padrão se não existir
+        fotocandidato: verificarImagemExistente(uf, candidato.fotocandidato),
       }));
       return [...acc, ...candidatosDoCargo];
     },
@@ -95,44 +108,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// Componente de Breadcrumb dinâmico
-// const Breadcrumb = ({ items }: { items: { label: string; href: string }[] }) => {
-//   return (
-//     <nav aria-label="breadcrumb">
-//       <ol className="breadcrumb">
-//         {items.map((item, index) => (
-//           <li key={index} className={`breadcrumb-item ${index === items.length - 1 ? 'active' : ''}`}>
-//             {index === items.length - 1 ? (
-//               item.label
-//             ) : (
-//               <a href={item.href}>{item.label}</a>
-//             )}
-//           </li>
-//         ))}
-//       </ol>
-//     </nav>
-//   );
-// };
-
-// Dados estruturados (JSON-LD)
-const StructuredData = ({ candidatosDoCargo, uf, municipio, cargo }: { candidatosDoCargo: Candidate[], uf: string, municipio: string, cargo: string }) => {
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": `Candidatos a ${cargo} em ${municipio} - ${uf.toUpperCase()}`,
-    "itemListElement": candidatosDoCargo.map((candidato, index) => ({
-      "@type": "Person",
-      "position": index + 1,
-      "name": candidato.nomeUrna,
-      "party": candidato.siglaPartido,
-      "image": candidato.fotocandidato ? candidato.fotocandidato : '',
-      "url": `/candidatos/${uf}/${municipio}/${cargo}/${candidato.slug}`,
-    }))
-  };
-
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
-};
-
 // Página de cargo que carrega os candidatos
 export default async function CargoPage({ params }: Props) {
   const candidatos = await loadCandidates(params.uf, params.municipio);
@@ -150,17 +125,13 @@ export default async function CargoPage({ params }: Props) {
 
   return (
     <>
-      {/* HeroCapaBox para ilustrar a página de cargo */}
       <HeroCapaBox
         title={`Candidatos a ${params.cargo}`}
         highlight={`${nomeCidade}`}
         description={`Aqui você encontra todos os candidatos ao cargo de ${params.cargo} registrados no município de ${nomeCidade}, ${params.uf.toUpperCase()}.`}
-        breadcrumb={breadcrumb} 
+        breadcrumb={breadcrumb}
       />
-     {/* Dados estruturados */}
-      <StructuredData candidatosDoCargo={candidatosDoCargo} uf={params.uf} municipio={nomeCidade} cargo={params.cargo} />
 
-      {/* Componente de listagem de candidatos */}
       <CargoClientComponent params={params} candidatosDoCargo={candidatosDoCargo} />
     </>
   );
