@@ -1,52 +1,50 @@
-// /app/candidatos/[uf]/page.tsx
-import Link from 'next/link';
-import { GetStaticProps } from 'next';
+import dynamic from 'next/dynamic';
+import HeroCapaBox from '@/app/components/HeroCapaBox'; // Certifique-se de que o caminho está correto
 import fs from 'fs';
 import path from 'path';
 
-interface Municipio {
-  nome: string;
-  cargos: string[];
-}
-
 interface Props {
-  municipios: Municipio[];
+  params: {
+    uf: string;
+  };
 }
 
-export default function UFPage({ municipios }: Props) {
+// Carrega o Client Component dinamicamente
+const UfMunicipiosPage = dynamic(() => import('./UfMunicipiosPage'), {
+  ssr: false, // Desabilita a renderização no servidor, apenas no cliente
+});
+
+export default function Page({ params }: Props) {
+  const { uf } = params;
+
+  // Breadcrumb dinâmico
+  const breadcrumb = [
+    { label: 'Início', href: '/' },
+    { label: 'Candidatos', href: '/candidatos' },
+    { label: uf.toUpperCase(), href: `/candidatos/${uf}` },
+  ];
+
   return (
     <div>
-      <h1>Municípios</h1>
-      {municipios.map((municipio, index) => (
-        <div key={index}>
-          <h2>{municipio.nome}</h2>
-          {municipio.cargos.map((cargo, idx) => (
-            <div key={idx}>
-              <Link href={`/candidatos/pa/${municipio.nome}/${cargo}`}>
-                {cargo}
-              </Link>
-            </div>
-          ))}
-        </div>
-      ))}
+      {/* HeroCapaBox incluído no Server Component */}
+      <HeroCapaBox
+        title={`Municípios de ${uf.toUpperCase()}`}
+        highlight={uf.toUpperCase()}
+        description={`Veja todos os municípios do estado de ${uf.toUpperCase()}. Selecione um município para ver os candidatos a Prefeito e Vereador.`}
+        breadcrumb={breadcrumb}
+      />
+
+      {/* Componente dinâmico para renderizar a lista de municípios */}
+      <UfMunicipiosPage uf={uf} />
     </div>
   );
 }
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const uf = params.uf;
-  const municipioDir = path.join(process.cwd(), 'data', uf);
-  const municipios = fs.readdirSync(municipioDir).map((municipio) => {
-    const filePath = path.join(municipioDir, municipio, `arquivos-candidatos-${uf}-${municipio}.json`);
-    const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    const cargos = Object.keys(jsonData.cargo);
-    return { nome: municipio, cargos };
-  });
+// Função para gerar parâmetros estáticos com ISR
+export async function generateStaticParams() {
+  const ufs = ['pa', 'sp', 'rj']; // Lista de UFs suportadas
+  return ufs.map((uf) => ({ params: { uf } }));
+}
 
-  return {
-    props: {
-      municipios,
-    },
-    revalidate: 60,
-  };
-};
+// Revalida a página a cada 60 segundos (ISR)
+export const revalidate = 60;
