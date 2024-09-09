@@ -14,6 +14,16 @@ interface Candidate {
   cidade: string;
 }
 
+interface CargoData {
+  [cargo: string]: {
+    [slug: string]: Candidate;
+  };
+}
+
+interface JsonData {
+  cargo: CargoData;
+}
+
 interface Props {
   params: {
     uf: string;
@@ -23,23 +33,26 @@ interface Props {
 }
 
 // Função para carregar candidatos
-async function loadCandidates(uf: string, municipio: string) {
+async function loadCandidates(uf: string, municipio: string): Promise<Candidate[]> {
   const filePath = path.join(process.cwd(), 'public', 'data', uf, municipio, `arquivo-candidato-${uf}-${municipio}.json`);
 
   if (!fs.existsSync(filePath)) {
     return [];
   }
 
-  const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const jsonData: JsonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-  const candidatosComSlug = Object.entries(jsonData.cargo).reduce((acc: any[], [cargo, candidatos]: [string, any]) => {
-    const candidatosDoCargo = Object.entries(candidatos).map(([slug, candidato]) => ({
-      ...candidato,
-      slug,
-      cargo,
-    }));
-    return [...acc, ...candidatosDoCargo];
-  }, []);
+  const candidatosComSlug: Candidate[] = Object.entries(jsonData.cargo).reduce(
+    (acc: Candidate[], [cargo, candidatos]: [string, { [slug: string]: Candidate }]) => {
+      const candidatosDoCargo = Object.entries(candidatos).map(([slug, candidato]) => ({
+        ...candidato,
+        slug,
+        cargo,
+      }));
+      return [...acc, ...candidatosDoCargo];
+    },
+    []
+  );
 
   return candidatosComSlug;
 }
@@ -83,23 +96,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // Componente de Breadcrumb dinâmico
-const Breadcrumb = ({ items }: { items: { label: string; href: string }[] }) => {
-  return (
-    <nav aria-label="breadcrumb">
-      <ol className="breadcrumb">
-        {items.map((item, index) => (
-          <li key={index} className={`breadcrumb-item ${index === items.length - 1 ? 'active' : ''}`}>
-            {index === items.length - 1 ? (
-              item.label
-            ) : (
-              <a href={item.href}>{item.label}</a>
-            )}
-          </li>
-        ))}
-      </ol>
-    </nav>
-  );
-};
+// const Breadcrumb = ({ items }: { items: { label: string; href: string }[] }) => {
+//   return (
+//     <nav aria-label="breadcrumb">
+//       <ol className="breadcrumb">
+//         {items.map((item, index) => (
+//           <li key={index} className={`breadcrumb-item ${index === items.length - 1 ? 'active' : ''}`}>
+//             {index === items.length - 1 ? (
+//               item.label
+//             ) : (
+//               <a href={item.href}>{item.label}</a>
+//             )}
+//           </li>
+//         ))}
+//       </ol>
+//     </nav>
+//   );
+// };
 
 // Dados estruturados (JSON-LD)
 const StructuredData = ({ candidatosDoCargo, uf, municipio, cargo }: { candidatosDoCargo: Candidate[], uf: string, municipio: string, cargo: string }) => {
