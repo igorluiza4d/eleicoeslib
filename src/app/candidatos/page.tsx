@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import HeroCapaBox from '@/app/components/HeroCapaBox';
 
+interface Candidato {
+  nomeUrna: string;
+}
+
 const CandidatosPage = () => {
   const [uf, setUf] = useState('');
   const [municipios, setMunicipios] = useState<string[]>([]); // Lista de municípios
@@ -29,7 +33,9 @@ const CandidatosPage = () => {
       fetch(`/public/data/${uf}/${municipio}/arquivo-candidato-${uf}-${municipio}.json`)
         .then((res) => res.json())
         .then((data) => {
-          const candidatosDoCargo = Object.values(data.cargo[cargo]).map((candidato: any) => candidato.nomeUrna);
+          const candidatosDoCargo = (Object.values(data.cargo[cargo]) as Candidato[]).map(
+            (candidato) => candidato.nomeUrna
+          );
           setCandidatos(candidatosDoCargo);
         })
         .catch((error) => console.error('Erro ao buscar candidatos:', error));

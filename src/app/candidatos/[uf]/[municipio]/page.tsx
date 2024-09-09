@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import HeroCapaBox from '@/app/components/HeroCapaBox'; // Certifique-se de que o caminho está correto
+import HeroCapaBox from '@/app/components/HeroCapaBox';
 
 interface Props {
   params: {
@@ -42,18 +42,18 @@ export default function Page({ params }: Props) {
 
 // Função para gerar parâmetros estáticos com ISR
 export async function generateStaticParams() {
-  const ufs = ['pa', 'sp', 'rj']; // Lista de UFs
-  const municipios = {
+  const ufs: string[] = ['pa', 'sp', 'rj']; // Lista de UFs
+  const municipios: Record<string, string[]> = {
     pa: ['belem', 'ananindeua', 'maraba'],
     sp: ['sao-paulo', 'campinas', 'santos'],
     rj: ['rio-de-janeiro', 'niteroi', 'petropolis'],
   };
 
-  const paths = [];
+  const paths: { params: { uf: string; municipio: string } }[] = [];
 
   // Gera parâmetros para cada combinação de UF e município
   ufs.forEach((uf) => {
-    municipios[uf].forEach((municipio) => {
+    municipios[uf].forEach((municipio: string) => {
       paths.push({ params: { uf, municipio } });
     });
   });
