@@ -4,17 +4,35 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import HeroCapaBox from '@/app/components/HeroCapaBox';
 
+// Função slugify para gerar valores apropriados para URLs
+const slugify = (text: string) =>
+  text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD') // Normalize com remoção de acentos
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/\s+/g, '-') // Substitui espaços por hifens
+    .replace(/[^a-z0-9\-]/g, '') // Remove caracteres especiais
+    .replace(/\-\-+/g, '-') // Substitui múltiplos hifens por um único
+    .replace(/^-+/, '') // Remove hifens no início
+    .replace(/-+$/, ''); // Remove hifens no fim
+
 interface Candidato {
   nomeUrna: string;
 }
 
+interface Municipio {
+  nome: string;
+}
+
 const CandidatosPage = () => {
   const [uf, setUf] = useState('');
-  const [municipios, setMunicipios] = useState<string[]>([]); // Lista de municípios
+  const [municipios, setMunicipios] = useState<Municipio[]>([]); // Lista de municípios como objetos
   const [municipio, setMunicipio] = useState('');
   const [cargo, setCargo] = useState('');
   const [candidato, setCandidato] = useState('');
-  const [candidatos, setCandidatos] = useState<string[]>([]); // Lista de candidatos para autocomplete
+  const [candidatos, setCandidatos] = useState<Candidato[]>([]); // Lista de candidatos para autocomplete
+  const [loading, setLoading] = useState(false); // Estado de carregamento
   const router = useRouter();
 
   // Função para buscar os municípios ao selecionar a UF
@@ -22,7 +40,12 @@ const CandidatosPage = () => {
     if (uf) {
       fetch(`/api/municipios?uf=${uf}`)
         .then((res) => res.json())
-        .then((data) => setMunicipios(data))
+        .then((data) => {
+          const sortedMunicipios = data.sort((a: Municipio, b: Municipio) =>
+            a.nome.localeCompare(b.nome)
+          );
+          setMunicipios(sortedMunicipios);
+        })
         .catch((error) => console.error('Erro ao buscar municípios:', error));
     }
   }, [uf]);
@@ -30,13 +53,26 @@ const CandidatosPage = () => {
   // Função para buscar os candidatos ao selecionar o município e cargo
   useEffect(() => {
     if (uf && municipio && cargo) {
-      fetch(`/public/data/${uf}/${municipio}/arquivo-candidato-${uf}-${municipio}.json`)
-        .then((res) => res.json())
+      const municipioSlug = slugify(municipio); // Transformando o nome do município em slug
+
+      // Usar a variável de ambiente NEXT_PUBLIC_API_URL para construir a URL completa
+      const baseURL = process.env.NEXT_PUBLIC_API_URL;
+      const fileURL = `${baseURL}/data/${uf}/${municipioSlug}/arquivo-candidato-${uf}-${municipioSlug}.json`;
+
+      fetch(fileURL)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`Erro ao buscar arquivo de candidatos: ${res.statusText}`);
+          }
+          return res.json();
+        })
         .then((data) => {
           const candidatosDoCargo = (Object.values(data.cargo[cargo]) as Candidato[]).map(
-            (candidato) => candidato.nomeUrna
+            (candidato) => ({
+              nomeUrna: candidato.nomeUrna
+            })
           );
-          setCandidatos(candidatosDoCargo);
+          setCandidatos(candidatosDoCargo); // Atualiza a lista de candidatos para o autocomplete
         })
         .catch((error) => console.error('Erro ao buscar candidatos:', error));
     }
@@ -46,13 +82,37 @@ const CandidatosPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Verifica se todos os campos estão preenchidos antes de redirecionar
-    if (uf && municipio && cargo && candidato) {
-      // Redireciona para a página do candidato
-      router.push(`/candidatos/${uf}/${municipio}/${cargo}/${candidato}`);
-    } else {
-      alert('Por favor, preencha todos os campos!');
+    // Verifica se o campo UF foi preenchido
+    if (!uf) {
+      alert('O campo UF é obrigatório!');
+      return;
     }
+
+    // Ativa o estado de carregamento
+    setLoading(true);
+
+    // Inicializa a URL base
+    let url = `/candidatos/${uf}`;
+
+    // Se o município for preenchido, adiciona o slug do município na URL
+    if (municipio) {
+      url += `/${slugify(municipio)}`;
+    }
+
+    // Se o cargo for preenchido, adiciona o slug do cargo na URL
+    if (cargo) {
+      url += `/${slugify(cargo)}`;
+    }
+
+    // Se o candidato for preenchido, adiciona o slug do candidato na URL
+    if (candidato) {
+      url += `/${slugify(candidato)}`;
+    }
+
+    // Redireciona para a URL construída após 1 segundo para exibir "Carregando"
+    setTimeout(() => {
+      router.push(url);
+    }, 1000); // Simula um atraso para que o "carregando" seja visível
   };
 
   return (
@@ -102,9 +162,9 @@ const CandidatosPage = () => {
                 className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
                 <option value="">Selecione o Município</option>
-                {municipios.map((municipio) => (
-                  <option key={municipio} value={municipio}>
-                    {municipio}
+                {municipios.map((municipioObj) => (
+                  <option key={municipioObj.nome} value={municipioObj.nome}>
+                    {municipioObj.nome}
                   </option>
                 ))}
               </select>
@@ -136,15 +196,15 @@ const CandidatosPage = () => {
               <input
                 id="candidato"
                 type="text"
-                list="candidatos"
+                list="listaCandidatos"
                 value={candidato}
                 onChange={(e) => setCandidato(e.target.value)}
                 placeholder="Digite o nome do candidato"
                 className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               />
-              <datalist id="candidatos">
+              <datalist id="listaCandidatos">
                 {candidatos.map((candidato) => (
-                  <option key={candidato} value={candidato} />
+                  <option key={candidato.nomeUrna} value={candidato.nomeUrna} />
                 ))}
               </datalist>
             </div>
@@ -153,12 +213,22 @@ const CandidatosPage = () => {
             <div>
               <button
                 type="submit"
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={loading} // Desabilitar o botão enquanto carrega
+                className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                  loading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
               >
-                Pesquisar
+                {loading ? 'Carregando...' : 'Pesquisar'}
               </button>
             </div>
           </form>
+
+          {/* Mensagem de carregamento (opcional) */}
+          {loading && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-500">Carregando...</p>
+            </div>
+          )}
         </div>
       </div>
     </>
